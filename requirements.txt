@@ -1,37 +1,9 @@
-# 3.1ml 机器学习项目依赖
-# Python 3.10+
-
-# 核心科学计算
-numpy>=1.24.0
-pandas>=2.0.0
-scipy>=1.10.0
-
-# 机器学习
-scikit-learn>=1.3.0
-xgboost>=2.0.0
-imbalanced-learn>=0.11.0
-
-# 超参数优化 (analysis_v2)
-optuna>=3.0.0
-
-# 统计分析 (analysis)
-statsmodels>=0.14.0
-
-# 可视化
-matplotlib>=3.7.0
-seaborn>=0.12.0
-
-# 模型与数据处理
-joblib>=1.3.0
-
-# Excel 支持 (pandas read_excel .xlsx)
-openpyxl>=3.1.0
-
-# 可解释性 (SHAP 蜂群图, 可选)
-shap>=0.43.0
-
-# ========== GPU 加速 (需 CUDA 环境, 可选) ==========
-# RAPIDS cuML: 需与 CUDA 版本匹配，建议用 conda 安装
-# 参考: https://docs.rapids.ai/install
-# cupy-cuda12x  # 按本地 CUDA 版本选择 cupy-cuda11x / cupy-cuda12x
-# cuml-cu12     # 或 cuml-cu11，与 cupy 对应
+streamlit==1.31.0
+joblib==1.3.2
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.2
+lime==0.2.0.1
+xgboost==2.0.3
+shap==0.44.0
+matplotlib==3.7.2
