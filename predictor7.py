@@ -84,8 +84,8 @@ age_num = st.number_input(
     format="%.2f"  # 保留1位小数
 )
 
-# 7. pre_apt = st.selectbox(
-    "术前是否使用抗凝抗板药物",    # ← 这一行前面应该只有4个空格（与上一行参数对齐）
+pre_apt = st.selectbox(
+    "术前是否使用抗凝抗板药物",    # ← 前面有4个空格（一个Tab或4个空格），与上行的参数对齐
     options=[0, 1],
     format_func=lambda x: "是" if x == 1 else "否")
 
