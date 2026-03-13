@@ -85,9 +85,9 @@ age_num = st.number_input(
 )
 
 # 7. pre_apt = st.selectbox(
-    "术前是否使用抗凝抗板药物",
+    "术前是否使用抗凝抗板药物",    # ← 这一行前面应该只有4个空格（与上一行参数对齐）
     options=[0, 1],
-    format_func=lambda x: "是" if x == 1 else "否")   # 注意末尾是英文括号
+    format_func=lambda x: "是" if x == 1 else "否")
 
 # 8. mono_total（数值型：输入具体小时数，自动编码为0=正常/1=异常）
 mono_total_num = st.number_input(
