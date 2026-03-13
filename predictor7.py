@@ -62,16 +62,53 @@ if st.button("预测"):
         crp_total_num
     ]
 
-    # 调试输出（可删除）
+    # 调试输出
     st.write("特征数量:", len(feature_values))
     st.write("特征值:", feature_values)
 
     # 转换为 DataFrame（带列名）
     input_df = pd.DataFrame([feature_values], columns=feature_names)
 
-    # 模型预测
-    predicted_class = model.predict(input_df)[0]  # 0：低风险，1：高风险
-    predicted_proba = model.predict_proba(input_df)[0]
+    # 调试：显示 DataFrame 信息
+    st.write("DataFrame 形状:", input_df.shape)
+    st.write("DataFrame 列名:", input_df.columns.tolist())
+    st.write("DataFrame 数据类型:\n", input_df.dtypes)
+
+    # 尝试获取模型期望的特征名（如果保存了）
+    if hasattr(model, 'get_booster'):
+        booster = model.get_booster()
+        if hasattr(booster, 'feature_names'):
+            st.write("模型期望的特征名:", booster.feature_names)
+        else:
+            st.write("模型未保存特征名")
+    else:
+        st.write("模型不是 XGBoost Booster 类型")
+
+    # 尝试用 numpy 数组预测（绕过列名检查）
+    try:
+        pred_np = model.predict(input_df.values)[0]
+        st.write("✅ 使用 numpy 数组预测成功，类别:", pred_np)
+    except Exception as e:
+        st.write("❌ 使用 numpy 数组预测失败:", str(e))
+
+    # 尝试用 DataFrame 预测
+    try:
+        pred_df = model.predict(input_df)[0]
+        st.write("✅ 使用 DataFrame 预测成功，类别:", pred_df)
+    except Exception as e:
+        st.write("❌ 使用 DataFrame 预测失败:", str(e))
+
+    # 根据可用的预测方式继续
+    if 'pred_df' in locals():
+        predicted_class = pred_df
+        predicted_proba = model.predict_proba(input_df)[0]
+    elif 'pred_np' in locals():
+        predicted_class = pred_np
+        # 注意：这里需要确保 predict_proba 也使用相同格式
+        predicted_proba = model.predict_proba(input_df.values)[0]
+    else:
+        st.error("预测失败，请检查输入数据。")
+        st.stop()
 
     # 显示预测结果
     st.subheader("📊 预测结果")
@@ -79,7 +116,7 @@ if st.button("预测"):
     st.write(f"**风险等级：{risk_label}**")
     st.write(f"**风险概率：** 低风险 {predicted_proba[0]:.2%} | 高风险 {predicted_proba[1]:.2%}")
 
-    # 健康建议
+    # 健康建议（保持不变）
     st.subheader("💡 健康建议")
     prob = predicted_proba[predicted_class] * 100
     if predicted_class == 1:
@@ -96,7 +133,6 @@ if st.button("预测"):
 
     # ====================== LIME解释 ======================
     st.subheader("🔍 LIME特征贡献解释")
-    # 只取模型使用的12个特征列
     X_train_lime = test_dataset[feature_names].values
     lime_explainer = LimeTabularExplainer(
         training_data=X_train_lime,
@@ -104,9 +140,10 @@ if st.button("预测"):
         class_names=['低风险', '高风险'],
         mode='classification'
     )
-    # 注意：这里用 input_df.values.flatten() 或 input_df.iloc[0].values
+    # 注意：LIME 的数据行需要与预测时使用的格式一致
+    data_row_for_lime = input_df.values.flatten() if 'input_df' in locals() else feature_values
     lime_exp = lime_explainer.explain_instance(
-        data_row=input_df.values.flatten(),
+        data_row=data_row_for_lime,
         predict_fn=model.predict_proba,
         num_features=12
     )
