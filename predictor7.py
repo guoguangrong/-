@@ -3,16 +3,14 @@ import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
-import shap
-import matplotlib.pyplot as plt
 from lime.lime_tabular import LimeTabularExplainer
 import streamlit.components.v1 as components
 import warnings
 warnings.filterwarnings('ignore')
 
 # 加载模型和数据
-model = joblib.load('xgboost_12.pkl')
-test_dataset = pd.read_csv('test_dataset.csv')  # 如果编码不是 utf-8，可添加 encoding='gbk'
+model = joblib.load('xgboost_12.pkl')          # 12特征的XGBoost模型
+test_dataset = pd.read_csv('test_dataset.csv') # 用于LIME解释的数据集（应包含相同的12个特征列）
 
 # 模型使用的12个特征（必须与训练时的顺序一致）
 feature_names = [
@@ -22,7 +20,10 @@ feature_names = [
 ]
 
 # ====================== 页面配置 ======================
-st.set_page_config(page_title="急性缺血性脑卒中血管内治疗术后症状性出血转化风险预测器", layout="wide")
+st.set_page_config(
+    page_title="急性缺血性脑卒中血管内治疗术后症状性出血转化风险预测器",
+    layout="wide"
+)
 st.title("急性缺血性脑卒中血管内治疗术后症状性出血转化风险预测器")
 st.markdown("### 请填写以下信息，点击预测获取风险评估结果")
 
@@ -62,88 +63,54 @@ if st.button("预测"):
         crp_total_num
     ]
 
-    # 调试输出
-    st.write("特征数量:", len(feature_values))
-    st.write("特征值:", feature_values)
-
-    # 转换为 DataFrame（带列名）
+    # 转换为DataFrame（带列名）
     input_df = pd.DataFrame([feature_values], columns=feature_names)
 
-    # 调试：显示 DataFrame 信息
-    st.write("DataFrame 形状:", input_df.shape)
-    st.write("DataFrame 列名:", input_df.columns.tolist())
-    st.write("DataFrame 数据类型:\n", input_df.dtypes)
+    # 获取高风险概率（二分类模型，概率数组[低风险概率, 高风险概率]）
+    proba = model.predict_proba(input_df)[0]
+    risk_prob = proba[1]  # 高风险概率
 
-    # 尝试获取模型期望的特征名（如果保存了）
-    if hasattr(model, 'get_booster'):
-        booster = model.get_booster()
-        if hasattr(booster, 'feature_names'):
-            st.write("模型期望的特征名:", booster.feature_names)
-        else:
-            st.write("模型未保存特征名")
+    # 根据自定义阈值划分风险等级（20%低风险阈值，80%高风险阈值）
+    if risk_prob < 0.20:
+        level = "低风险"
+        advice = (
+            f"模型预测您的症状性出血风险概率为 {risk_prob:.1%}，属于低风险。"
+            "建议继续保持当前治疗方案，定期随访。"
+        )
+    elif risk_prob < 0.80:
+        level = "中风险"
+        advice = (
+            f"模型预测您的症状性出血风险概率为 {risk_prob:.1%}，属于中风险。"
+            "建议密切观察，遵医嘱进行相关检查。"
+        )
     else:
-        st.write("模型不是 XGBoost Booster 类型")
-
-    # 尝试用 numpy 数组预测（绕过列名检查）
-    try:
-        pred_np = model.predict(input_df.values)[0]
-        st.write("✅ 使用 numpy 数组预测成功，类别:", pred_np)
-    except Exception as e:
-        st.write("❌ 使用 numpy 数组预测失败:", str(e))
-
-    # 尝试用 DataFrame 预测
-    try:
-        pred_df = model.predict(input_df)[0]
-        st.write("✅ 使用 DataFrame 预测成功，类别:", pred_df)
-    except Exception as e:
-        st.write("❌ 使用 DataFrame 预测失败:", str(e))
-
-    # 根据可用的预测方式继续
-    if 'pred_df' in locals():
-        predicted_class = pred_df
-        predicted_proba = model.predict_proba(input_df)[0]
-    elif 'pred_np' in locals():
-        predicted_class = pred_np
-        # 注意：这里需要确保 predict_proba 也使用相同格式
-        predicted_proba = model.predict_proba(input_df.values)[0]
-    else:
-        st.error("预测失败，请检查输入数据。")
-        st.stop()
+        level = "高风险"
+        advice = (
+            f"模型预测您的症状性出血风险概率为 {risk_prob:.1%}，属于高风险。"
+            "建议立即就医，加强监测和预防措施。"
+        )
 
     # 显示预测结果
     st.subheader("📊 预测结果")
-    risk_label = "高风险" if predicted_class == 1 else "低风险"
-    st.write(f"**风险等级：{risk_label}**")
-    st.write(f"**风险概率：** 低风险 {predicted_proba[0]:.2%} | 高风险 {predicted_proba[1]:.2%}")
+    st.write(f"**风险等级：{level}**")
+    st.write(f"**高风险概率：{risk_prob:.2%}**")
 
-    # 健康建议（保持不变）
+    # 显示健康建议
     st.subheader("💡 健康建议")
-    prob = predicted_proba[predicted_class] * 100
-    if predicted_class == 1:
-        advice = (
-            f"模型预测您的症状性出血风险为高风险（概率{prob:.1f}%）。"
-            "建议密切监测神经系统症状，遵医嘱进行影像学复查，控制血压、血糖，预防并发症。"
-        )
-    else:
-        advice = (
-            f"模型预测您的症状性出血转化风险为低风险（概率{prob:.1f}%）。"
-            "建议继续保持当前治疗方案，定期随访，如有不适及时就医。"
-        )
     st.write(advice)
 
     # ====================== LIME解释 ======================
     st.subheader("🔍 LIME特征贡献解释")
+    # 只取模型使用的12个特征列
     X_train_lime = test_dataset[feature_names].values
     lime_explainer = LimeTabularExplainer(
         training_data=X_train_lime,
         feature_names=feature_names,
-        class_names=['低风险', '高风险'],
+        class_names=['低风险', '高风险'],  # LIME仍用二分类名称
         mode='classification'
     )
-    # 注意：LIME 的数据行需要与预测时使用的格式一致
-    data_row_for_lime = input_df.values.flatten() if 'input_df' in locals() else feature_values
     lime_exp = lime_explainer.explain_instance(
-        data_row=data_row_for_lime,
+        data_row=input_df.values.flatten(),
         predict_fn=model.predict_proba,
         num_features=12
     )
