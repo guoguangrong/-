@@ -11,7 +11,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # 加载模型和数据
-model = joblib.load('xgboost.pkl')
+model = joblib.load('xgboost_12.pkl')
 test_dataset = pd.read_csv('test_dataset.csv')  # 如果编码不是 utf-8，可添加 encoding='gbk'
 
 # 模型使用的12个特征（必须与训练时的顺序一致）
