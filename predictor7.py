@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 # 加载模型和数据
 model = joblib.load('xgboost.pkl')
-test_dataset = pd.read_csv('test_dataset.csv')
+test_dataset = pd.read_csv('test_dataset.csv')  # 如果编码不是 utf-8，可添加 encoding='gbk'
 
 # 模型使用的12个特征（必须与训练时的顺序一致）
 feature_names = [
@@ -42,7 +42,7 @@ agitation = st.selectbox(
     format_func=lambda x: {0: "无", 1: "轻度躁动", 2: "中度躁动", 3: "重度躁动"}[x]
 )
 post_gastric_tube = st.selectbox("术后是否留置胃管", options=[0, 1], format_func=lambda x: "是" if x == 1 else "否")
-crp_total_num = st.number_input("基线超敏C反应蛋白", min_value=0.0, value=3.0, step=0.1, format="%.2f")
+crp_total_num = st.number_input("基线超敏C反应蛋白", min_value=0.0, value=0.0, step=0.1, format="%.2f")
 
 # ====================== 预测 ======================
 if st.button("预测"):
@@ -61,11 +61,17 @@ if st.button("预测"):
         post_gastric_tube,
         crp_total_num
     ]
-    features = np.array([feature_values])
+
+    # 调试输出（可删除）
+    st.write("特征数量:", len(feature_values))
+    st.write("特征值:", feature_values)
+
+    # 转换为 DataFrame（带列名）
+    input_df = pd.DataFrame([feature_values], columns=feature_names)
 
     # 模型预测
-    predicted_class = model.predict(features)[0]  # 0：低风险，1：高风险
-    predicted_proba = model.predict_proba(features)[0]
+    predicted_class = model.predict(input_df)[0]  # 0：低风险，1：高风险
+    predicted_proba = model.predict_proba(input_df)[0]
 
     # 显示预测结果
     st.subheader("📊 预测结果")
@@ -73,7 +79,7 @@ if st.button("预测"):
     st.write(f"**风险等级：{risk_label}**")
     st.write(f"**风险概率：** 低风险 {predicted_proba[0]:.2%} | 高风险 {predicted_proba[1]:.2%}")
 
-    # 健康建议（可根据临床知识优化）
+    # 健康建议
     st.subheader("💡 健康建议")
     prob = predicted_proba[predicted_class] * 100
     if predicted_class == 1:
@@ -98,8 +104,9 @@ if st.button("预测"):
         class_names=['低风险', '高风险'],
         mode='classification'
     )
+    # 注意：这里用 input_df.values.flatten() 或 input_df.iloc[0].values
     lime_exp = lime_explainer.explain_instance(
-        data_row=features.flatten(),
+        data_row=input_df.values.flatten(),
         predict_fn=model.predict_proba,
         num_features=12
     )
