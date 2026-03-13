@@ -123,10 +123,10 @@ agitation = st.selectbox(
     }[x]
 )
 
-# 11. post_gastric_tube = st.selectbox(
+post_gastric_tube = st.selectbox(
     "术后是否留置胃管",
     options=[0, 1],
-    format_func=lambda x: "是" if x == 1 else "否")   # 同样改为英文括号+正确逻辑
+    format_func=lambda x: "是" if x == 1 else "否")   # 注意缩进和括号
 
 # 12. crp_total（数值型：输入具体小时数，自动编码为0=正常/1=异常）
 crp_total_num = st.number_input(
