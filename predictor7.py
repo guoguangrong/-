@@ -84,11 +84,10 @@ age_num = st.number_input(
     format="%.2f"  # 保留1位小数
 )
 
-# 7. pre_apt（0：否，1：是）
-pre_apt = st.selectbox(
+# 7. pre_apt = st.selectbox(
     "术前是否使用抗凝抗板药物",
     options=[0, 1],
-    format_func=lambda x: "是" if x == 0 else "否")
+    format_func=lambda x: "是" if x == 1 else "否")   # 注意末尾是英文括号
 
 # 8. mono_total（数值型：输入具体小时数，自动编码为0=正常/1=异常）
 mono_total_num = st.number_input(
@@ -124,11 +123,10 @@ agitation = st.selectbox(
     }[x]
 )
 
-# 11. post_gastric_tube（0：否，1：是）
-post_gastric_tube = st.selectbox(
+# 11. post_gastric_tube = st.selectbox(
     "术后是否留置胃管",
     options=[0, 1],
-    format_func=lambda x: "是" if x == 0 else "否"）
+    format_func=lambda x: "是" if x == 1 else "否")   # 同样改为英文括号+正确逻辑
 
 # 12. crp_total（数值型：输入具体小时数，自动编码为0=正常/1=异常）
 crp_total_num = st.number_input(
